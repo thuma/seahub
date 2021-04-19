@@ -219,6 +219,9 @@ class DirSharedItemsEndpoint(APIView):
     def post(self, request, repo_id, format=None):
         """Update shared item permission.
         """
+        if not request.user.permissions.can_share_repo():
+            return api_error(status.HTTP_403_FORBIDDEN, 'Permission denied.')
+
         username = request.user.username
         repo = seafile_api.get_repo(repo_id)
         if not repo:
@@ -289,6 +292,10 @@ class DirSharedItemsEndpoint(APIView):
                             content_type=json_content_type)
 
     def put(self, request, repo_id, format=None):
+
+        if not request.user.permissions.can_share_repo():
+            return api_error(status.HTTP_403_FORBIDDEN, 'Permission denied.')
+
         username = request.user.username
         repo = seafile_api.get_repo(repo_id)
         if not repo:
@@ -498,6 +505,10 @@ class DirSharedItemsEndpoint(APIView):
             status=200, content_type=json_content_type)
 
     def delete(self, request, repo_id, format=None):
+
+        if not request.user.permissions.can_share_repo():
+            return api_error(status.HTTP_403_FORBIDDEN, 'Permission denied.')
+
         username = request.user.username
         repo = seafile_api.get_repo(repo_id)
         if not repo:
