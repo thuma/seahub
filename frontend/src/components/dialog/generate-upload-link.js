@@ -49,6 +49,7 @@ class GenerateUploadLink extends React.Component {
       sharedUploadInfo: null,
       isSendLinkShown: false,
       isExpireChecked: !this.isExpireDaysNoLimit,
+      isOnEditExpiration: false,
       setExp: 'by-days',
       expireDays: this.defaultExpireDays,
       expDate: null
@@ -252,6 +253,32 @@ class GenerateUploadLink extends React.Component {
     });
   }
 
+  onEditExpirationToggle = () => {
+    this.setState({isOnEditExpiration: !this.state.isOnEditExpiration});
+  }
+
+  updateExpiration = () => {
+
+    let { setExp, expireDays, expDate } = this.state;
+
+    let expirationTime = '';
+    if (setExp == 'by-days') {
+      expirationTime = moment().add(parseInt(expireDays), 'days').format();
+    } else {
+      expirationTime = expDate.format();
+    }
+
+    seafileAPI.updateUploadLink(this.state.sharedUploadInfo.token, expirationTime).then((res) => {
+      let sharedUploadInfo = new UploadLink(res.data);
+      this.setState({sharedUploadInfo: sharedUploadInfo});
+      let message = gettext('Successfully update expiration.');
+      toaster.success(message);
+    }).catch((error) => {
+      let errMessage = Utils.getErrorMsg(error);
+      toaster.danger(errMessage);
+    });
+  }
+
   render() {
 
     const { isSendLinkShown } = this.state;
@@ -276,7 +303,59 @@ class GenerateUploadLink extends React.Component {
             {sharedUploadInfo.expire_date && (
               <FormGroup className="mb-0">
                 <dt className="text-secondary font-weight-normal">{gettext('Expiration Date:')}</dt>
-                <dd>{moment(sharedUploadInfo.expire_date).format('YYYY-MM-DD HH:mm:ss')}</dd>
+                {!this.state.isOnEditExpiration ? (
+                  <div>
+                  <dd>{moment(sharedUploadInfo.expire_date).format('YYYY-MM-DD HH:mm:ss')}</dd>
+                    <span
+                      title={gettext('Edit Expiration')}
+                      className="fa fa-pencil-alt attr-action-icon"
+                      onClick={this.onEditExpirationToggle}>
+                    </span>
+                  </div>
+                ) : (
+                  <div>
+                    <dd style={{width:'250px'}} onMouseEnter={this.handleMouseOver} onMouseLeave={this.handleMouseOut}>
+                      <div className="ml-4">
+                        <FormGroup check>
+                          <Label check>
+                            <Input type="radio" name="set-exp" value="by-days" checked={this.state.setExp == 'by-days'} onChange={this.setExp} className="mr-1" />
+                            <span>{gettext('Expiration days')}</span>
+                          </Label>
+                          {this.state.setExp == 'by-days' && (
+                            <Fragment>
+                              <InputGroup style={{width: inputWidth}}>
+                                <Input type="text" value={this.state.expireDays} onChange={this.onExpireDaysChanged} />
+                                <InputGroupAddon addonType="append">
+                                  <InputGroupText>{gettext('days')}</InputGroupText>
+                                </InputGroupAddon>
+                              </InputGroup>
+                              {!this.state.isExpireDaysNoLimit && (
+                                <FormText color="muted">{this.expirationLimitTip}</FormText>
+                              )}
+                            </Fragment>
+                          )}
+                        </FormGroup>
+                        <FormGroup check>
+                          <Label check>
+                            <Input type="radio" name="set-exp" value="by-date" checked={this.state.setExp == 'by-date'} onChange={this.setExp} className="mr-1" />
+                            <span>{gettext('Expiration time')}</span>
+                          </Label>
+                          {this.state.setExp == 'by-date' && (
+                            <DateTimePicker
+                              inputWidth={inputWidth}
+                              disabledDate={this.disabledDate}
+                              value={this.state.expDate}
+                              onChange={this.onExpDateChanged}
+                            />
+                          )}
+                        </FormGroup>
+                      </div>
+                    </dd>
+
+                    <button className="btn btn-primary" onClick={this.updateExpiration}>{gettext('Update')}</button>{' '}
+                    <button className="btn btn-secondary" onClick={this.onEditExpirationToggle}>{gettext('Cancel')}</button>
+                  </div>
+                )}
               </FormGroup>
             )}
           </Form>
