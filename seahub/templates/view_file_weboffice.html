@@ -32,6 +32,7 @@
           mount: document.getElementById('web-office-iframe'),
           wpsUrl: '{{wps_weboffice_editor_url|safe}}' // 替换成自己的webOffice在线预览url地址
         });
+        jssdk.setToken({ token: 'lian_test_wps_weboffice_token' }); // 替换成自己的token
       }
     </script>
   </body>

@@ -1,6 +1,7 @@
 # Copyright (c) 2012-2016 Seafile Ltd.
 # encoding: utf-8
 
+from pprint import pprint
 import os
 import json
 import logging
@@ -65,36 +66,36 @@ class WebofficeFileInfoView(APIView):
             "file": {
                 "id": file_id,  # 文件id,字符串长度小于32
                 "name": file_name,  # 文件名(必须带文件后缀)
-                "version": file_id[:10],  # 当前版本号，位数小于11
+                "version": 1,  # 当前版本号，位数小于11
                 "size": file_size,  # 文件大小，单位为B(文件真实大小，否则会出现异常)
-                "creator": '',  # 创建者id，字符串长度小于32
-                "create_time": '',  # 创建时间，时间戳，单位为秒
-                "modifier": '',  # 修改者id，字符串长度小于32
-                "modify_time": '',  # 修改时间，时间戳，单位为秒
+                "creator": username,  # 创建者id，字符串长度小于32
+                "create_time": 1136185445,  # 创建时间，时间戳，单位为秒
+                "modifier": username,  # 修改者id，字符串长度小于32
+                "modify_time": 1136185446,  # 修改时间，时间戳，单位为秒
                 "download_url": download_url,  # 载地址
                 "preview_pages": 3,  # TODO 限制预览页数
-                # "user_acl": {
-                #     "rename": 1,  # 重命名权限，1 为打开该权限，0 为关闭该权限，默认为0
-                #     "history": 1,  # 历史版本权限，1 为打开该权限，0 为关闭该权限，默认为1
-                #     "copy": 1,  # 复制
-                #     "export": 1,  # 导出PDF
-                #     "print": 1  # 打印
-                # },
-                # "watermark": {
-                #     "type": 1,  # 水印类型， 0 为无水印； 1 为文字水印
-                #     "value": "禁止传阅",  # 文字水印的文字，当type 为1 时此字段必选
-                #     "fillstyle": "rgba( 192, 192, 192, 0.6 )",  # 水印的透明度，非必选，有默认值
-                #     "font": "bold 20px Serif",  # 水印的字体，非必选，有默认值
-                #     "rotate": -0.7853982,  # 水印的旋转度，非必选，有默认值
-                #     "horizontal": 50,  # 水印水平间距，非必选，有默认值
-                #     "vertical": 100  # 水印垂直间距，非必选，有默认值
-                # }
+                "user_acl": {
+                    "rename": 0,  # 重命名权限，1 为打开该权限，0 为关闭该权限，默认为0
+                    "history": 0,  # 历史版本权限，1 为打开该权限，0 为关闭该权限，默认为1
+                    "copy": 0,  # 复制
+                    "export": 0,  # 导出PDF
+                    "print": 0  # 打印
+                },
+                "watermark": {
+                    "type": 1,  # 水印类型， 0 为无水印； 1 为文字水印
+                    "value": "禁止传阅",  # 文字水印的文字，当type 为1 时此字段必选
+                    "fillstyle": "rgba( 192, 192, 192, 0.6 )",  # 水印的透明度，非必选，有默认值
+                    "font": "bold 20px Serif",  # 水印的字体，非必选，有默认值
+                    "rotate": -0.7853982,  # 水印的旋转度，非必选，有默认值
+                    "horizontal": 50,  # 水印水平间距，非必选，有默认值
+                    "vertical": 100  # 水印垂直间距，非必选，有默认值
+                }
             },
             "user": {
                 "id": username,  # 用户id，长度小于32
                 "name": email2nickname(username),  # 用户名称
-                "permission": "write" if can_edit else 'read',  # 用户操作权限，write：可编辑，read：预览
-                "avatar_url": api_avatar_url  # 用户头像地址
+                "permission": "write" if can_edit else "read",  # 用户操作权限，write：可编辑，read：预览
+                "avatar_url": avatar_url  # 用户头像地址
             }
         }
 
@@ -104,24 +105,33 @@ class WebofficeFileInfoView(APIView):
 
 class WebofficeUserInfoView(APIView):
 
-    def get(self, request):
+    def post(self, request):
         """  获用户信息
         """
+        print('in WebofficeUserInfoView')
+        pprint(request.data)
+        print('end in WebofficeUserInfoView\n')
 
-        wps_file_id = request.GET.get('_w_third_file_id', '')
+        request_body = request.data.get('body', {})
+        user_id = request_body.get('userid', '')
+        user_list = []
 
-        doc_info = cache.get(wps_file_id)
-        username = doc_info['username']
-        avatar_url, _, _ = api_avatar_url(username, int(72))
+        for user_id in [user_id]:
+
+            if not user_id:
+                continue
+
+            avatar_url, _, _ = api_avatar_url(user_id, int(72))
+            user_info_dict = {
+                "id": user_id,  # 用户ID 字符串长度小于32
+                "name": email2nickname(user_id),  # 用户名
+                "avatar_url": avatar_url  # 用户头像
+            }
+
+            user_list.append(user_info_dict)
 
         result = {
-            "users": [
-                {
-                    "id": username,  # 用户ID 字符串长度小于32
-                    "name": email2nickname(username),  # 用户名
-                    "avatar_url": avatar_url  # 用户头像
-                    },
-                ]
+            "users": user_list
         }
         return HttpResponse(json.dumps(result), status=200,
                             content_type=json_content_type)
@@ -129,7 +139,7 @@ class WebofficeUserInfoView(APIView):
 
 class WebofficeFileOnlineView(APIView):
 
-    def get(self, request):
+    def post(self, request):
         """ 通知此文件目前有哪些人正在协作
         """
 
@@ -137,6 +147,9 @@ class WebofficeFileOnlineView(APIView):
         # doc_info = cache.get(wps_file_id)
         # username = doc_info['username']
         # TODO
+        print('in WebofficeFileOnlineView')
+        pprint(request.data)
+        print('end in WebofficeFileOnlineView\n')
         result = {}
         return HttpResponse(json.dumps(result), status=200,
                             content_type=json_content_type)
@@ -144,7 +157,7 @@ class WebofficeFileOnlineView(APIView):
 
 class WebofficeOnnotifyView(APIView):
 
-    def get(self, request):
+    def post(self, request):
         """ 回调通知
         """
 
@@ -152,6 +165,9 @@ class WebofficeOnnotifyView(APIView):
         # doc_info = cache.get(wps_file_id)
         # username = doc_info['username']
         # TODO
+        print('in WebofficeOnnotifyView')
+        pprint(request.data)
+        print('end in WebofficeOnnotifyView\n')
         result = {}
         return HttpResponse(json.dumps(result), status=200,
                             content_type=json_content_type)
@@ -198,18 +214,28 @@ class WebofficeFileSaveView(APIView):
             return HttpResponse(json.dumps({}), status=500,
                                 content_type=json_content_type)
 
-        # file_name = os.path.basename(file_path)
-        # file_id = seafile_api.get_file_id_by_path(repo_id, file_path)
-        # result = {
-        #     "file": {
-        #         "id": "f132aa30a87064",  # 文件id，字符串长度小于32
-        #         "name": "example.doc",  # 文件名
-        #         "version": 2,  # 当前版本号，位数小于11
-        #         "size": 200,  # 文件大小，单位是B
-        #         "download_url": "http://www.xxx.cn/v1/file?fid=f132aa30a87064"  # 文件下载地址
-        #     }
-        # }
+        file_name = os.path.basename(file_path)
+        file_id = seafile_api.get_file_id_by_path(repo_id, file_path)
+        download_token = seafile_api.get_fileserver_access_token(repo_id,
+                                                                 file_id,
+                                                                 'download',
+                                                                 username,
+                                                                 use_onetime=True)
 
-        result = {}
+        download_url = gen_file_get_url(download_token, file_name)
+
+        repo = seafile_api.get_repo(repo_id)
+        file_size = seafile_api.get_file_size(repo.store_id, repo.version, file_id)
+
+        result = {
+            "file": {
+                "id": file_id,  # 文件id，字符串长度小于32
+                "name": file_name,  # 文件名
+                "version": 2,  # TODO 当前版本号，位数小于11
+                "size": file_size,  # 文件大小，单位是B
+                "download_url": download_url  # 文件下载地址
+            }
+        }
+
         return HttpResponse(json.dumps(result), status=200,
                             content_type=json_content_type)

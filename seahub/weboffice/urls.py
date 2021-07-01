@@ -6,9 +6,9 @@ from .views import WebofficeFileInfoView, WebofficeFileSaveView, \
 
 urlpatterns = [
     # RESTful API
-    url(r'^file-online/$', WebofficeFileOnlineView.as_view(), name='WebofficeFileOnlineView'),
-    url(r'^onnotify/$', WebofficeOnnotifyView.as_view(), name='WebofficeOnnotifyView'),
-    url(r'^user_info/$', WebofficeUserInfoView.as_view(), name='WebofficeUserInfoView'),
     url(r'^file_info/$', WebofficeFileInfoView.as_view(), name='WebofficeFileInfoView'),
     url(r'^file_save/$', WebofficeFileSaveView.as_view(), name='WebofficeFileSaveView'),
+    url(r'^file_online/$', WebofficeFileOnlineView.as_view(), name='WebofficeFileOnlineView'),
+    url(r'^user_info/$', WebofficeUserInfoView.as_view(), name='WebofficeUserInfoView'),
+    url(r'^onnotify/$', WebofficeOnnotifyView.as_view(), name='WebofficeOnnotifyView'),
 ]
