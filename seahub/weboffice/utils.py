@@ -6,6 +6,8 @@ import requests
 import hashlib
 from pprint import pprint
 
+from django.core.cache import cache
+
 from seahub.weboffice.settings import WPS_WEBOFFICE_OPENAPI_HOST, \
         WPS_WEBOFFICE_APP_ID, WPS_WEBOFFICE_APP_KEY, \
         WPS_WEBOFFICE_GET_APP_TOKEN_URI, \
@@ -105,8 +107,8 @@ def wps_weboffice_get_editor_url(request, repo_id, file_path, can_edit):
     method = 'GET'
     info = '{}_{}'.format(repo_id, file_path).encode('utf-8')
     wps_file_id = hashlib.md5(info).hexdigest()[:30]
-    from django.core.cache import cache
     doc_info = {
+        'can_edit': can_edit,
         'username': request.user.username,
         'repo_id': repo_id,
         'file_path': file_path
@@ -115,29 +117,23 @@ def wps_weboffice_get_editor_url(request, repo_id, file_path, can_edit):
 
     if can_edit:
         uri = '{}?app_token={}&file_id={}&type={}&_w_tokentype=1'.format(WPS_WEBOFFICE_GET_EDIT_URI,
-                                                          app_token,
-                                                          wps_file_id,
-                                                          file_type)
+                                                                         app_token,
+                                                                         wps_file_id,
+                                                                         file_type)
     else:
         uri = '{}?app_token={}&file_id={}&_w_tokentype=1'.format(WPS_WEBOFFICE_GET_PREVIEW_URI,
-                                                  app_token,
-                                                  wps_file_id)
+                                                                 app_token,
+                                                                 wps_file_id)
 
     resp = send_request(method, uri)
 
     # {'result': 0,
     #  'url': #  'http://39.97.117.71/weboffice/office/w/5c0f55a9115e5e09fc62b738aed88eb4?...'}
     try:
-        print(json.loads(resp.text)['url'])
         return json.loads(resp.text)['url']
     except KeyError as e:
         logger.error(e)
         logger.error(uri)
         logger.error(resp.status_code)
         logger.error(resp.text)
-        print(e)
-        print("uri: {}".format(uri))
-        print("status: {}".format(resp.status_code))
-        print("response data:")
-        pprint(json.loads(resp.text))
         return ''
